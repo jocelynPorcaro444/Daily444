@@ -4,14 +4,15 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
 const TRANSITS = [
-  { planet: "Sun", degree: "12°", sign: "Aries", house: "6H" },
-  { planet: "Mercury", degree: "5°", sign: "Aries", house: "6H" },
-  { planet: "Venus", degree: "20°", sign: "Aries", house: "6H" },
-  { planet: "Neptune", degree: "0°", sign: "Aries", house: "6H" },
-  { planet: "Mars", degree: "18°", sign: "Cancer", house: "9H" },
-  { planet: "Jupiter", degree: "20°", sign: "Gemini", house: "8H" },
-  { planet: "Saturn", degree: "26°", sign: "Pisces", house: "5H" },
-  { planet: "Pluto", degree: "3°", sign: "Aquarius", house: "4H" },
+  { planet: "Sun", degree: "12°", sign: "Aries", house: "6H", note: "health & routine" },
+  { planet: "Mercury", degree: "5°", sign: "Aries", house: "6H", note: "health & routine" },
+  { planet: "Venus", degree: "20°", sign: "Aries", house: "6H", note: "leaves 6H Apr 19" },
+  { planet: "Saturn", degree: "2°", sign: "Aries", house: "6H", note: "here until 2028!" },
+  { planet: "Neptune", degree: "0°", sign: "Aries", house: "6H", note: "165yr cycle!" },
+  { planet: "Mars", degree: "0°", sign: "Pisces", house: "5H", note: "just entered today!" },
+  { planet: "Jupiter", degree: "17°", sign: "Cancer", house: "9H", note: "beliefs & wisdom" },
+  { planet: "Pluto", degree: "3°", sign: "Aquarius", house: "4H", note: "home & roots" },
+  { planet: "Uranus", degree: "24°", sign: "Taurus", house: "7H", note: "partnerships" },
 ];
 
 function buildPrompt(dateStr) {
@@ -23,10 +24,14 @@ Natal: Sun 19 Pisces 5H, Moon 1 Aries 6H, Mercury 29 Capricorn 3H, Venus 0 Aries
 About Jocelyn: healthcare professional with integrative/functional medicine background, recently finished a 72-hour water fast, on a 60-day gut reset protocol, practices hot yoga, grows lion's mane mushrooms, crochets, gluten-free since 2026, lives in Fort Collins CO, two daughters, partner Steve.
 
 CURRENT TRANSITS ${dateStr}:
-7 planets in Aries all transiting her 6th house of health, body, daily routine and service. Extraordinary activation.
-Neptune just entered Aries 0° first time in 165 years — spiritual renewal to her 6th house.
-Jupiter 20 Gemini her 8H, Saturn 26 Pisces her 5H, Pluto 3 Aquarius her 4H, Mars 18 Cancer her 9H.
-
+CRITICAL: Solar Eclipse in Aries on April 14 — directly hitting her 6H. Huge new beginning in health and body being seeded RIGHT NOW.
+Saturn 2 Aries → her 6H (long-term structure, here until 2028!)
+Neptune 0 Aries → her 6H (spiritual renewal, first time in 165 years)
+Venus 20 Aries → her 6H (moving to Taurus/7H on April 19)
+Mars just entered Pisces 0 → her 5H TODAY (creativity, joy, daughters)
+Jupiter 17 Cancer → her 9H (expansion of beliefs and wisdom)
+Pluto 3 Aquarius → her 4H (transformation of home and roots)
+Uranus 24 Taurus → her 7H (unexpected shifts in partnerships)
 Make the reading warm, specific, personal. Reference her actual life context naturally. Speak directly to her.
 
 Respond ONLY with valid JSON, no markdown, no backticks:
@@ -100,7 +105,7 @@ export default function App() {
         </div>
 
         <div style={{ fontSize:12, color:"#F0997B", marginBottom:"1.5rem", fontStyle:"italic" }}>
-          ✦ 7 planets in Aries — all activating your 6th house of health &amp; healing
+✦ Solar Eclipse in Aries Apr 14 · Saturn in your 6H until 2028 · Mars entered Pisces/5H today
         </div>
 
         {!reading && !loading && (
