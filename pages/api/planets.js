@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://api.astronomyapi.com/api/v2/bodies/positions?latitude=40.5853&longitude=-105.0844&elevation=1525&from_date=${dateStr}&to_date=${dateStr}&time=09:00:00`,
+      `https://api.astronomyapi.com/api/v2/bodies/positions?latitude=40.5853&longitude=-105.0844&elevation=1525&from_date=${dateStr}&to_date=${dateStr}&time=09:00:00&bodies=sun,moon,mercury,venus,mars,jupiter,saturn,uranus,neptune,pluto`,
       {
         headers: {
           'Authorization': `Basic ${credentials}`
