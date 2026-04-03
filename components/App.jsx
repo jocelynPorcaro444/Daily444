@@ -1,37 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-const TRANSITS = [
-  { planet: "Sun", degree: "12°", sign: "Aries", house: "6H", note: "health & routine" },
-  { planet: "Mercury", degree: "5°", sign: "Aries", house: "6H", note: "health & routine" },
-  { planet: "Venus", degree: "20°", sign: "Aries", house: "6H", note: "leaves 6H Apr 19" },
-  { planet: "Saturn", degree: "2°", sign: "Aries", house: "6H", note: "here until 2028!" },
-  { planet: "Neptune", degree: "0°", sign: "Aries", house: "6H", note: "165yr cycle!" },
-  { planet: "Mars", degree: "0°", sign: "Pisces", house: "5H", note: "just entered today!" },
-  { planet: "Jupiter", degree: "17°", sign: "Cancer", house: "9H", note: "beliefs & wisdom" },
-  { planet: "Pluto", degree: "3°", sign: "Aquarius", house: "4H", note: "home & roots" },
-  { planet: "Uranus", degree: "24°", sign: "Taurus", house: "7H", note: "partnerships" },
+const HOUSE_MAP = {
+  "Aries": "6H", "Taurus": "7H", "Gemini": "8H", "Cancer": "9H",
+  "Leo": "10H", "Virgo": "11H", "Libra": "12H", "Scorpio": "1H",
+  "Sagittarius": "2H", "Capricorn": "3H", "Aquarius": "4H", "Pisces": "5H"
+};
+
+const ZODIAC_SIGNS = [
+  "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+  "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"
 ];
 
-function buildPrompt(dateStr) {
+function degreeToSign(degree) {
+  const index = Math.floor(degree / 30);
+  const pos = (degree % 30).toFixed(1);
+  return { sign: ZODIAC_SIGNS[index], degree: `${pos}°` };
+}
+
+function buildPrompt(dateStr, planets) {
+  const planetLines = planets.map(p =>
+    `${p.planet} ${p.degree} ${p.sign} → her ${p.house} (${p.note})`
+  ).join('\n');
+
   return `You are a skilled astrologer. Generate a personal daily horoscope for Jocelyn for ${dateStr}.
 
 JOCELYN'S NATAL CHART (Scorpio rising, born March 9 1978):
-House system: Aries=6H health/routine, Taurus=7H partnerships, Gemini=8H transformation, Cancer=9H beliefs/travel, Leo=10H career, Virgo=11H community, Libra=12H subconscious, Scorpio=1H self, Sagittarius=2H money, Capricorn=3H communication, Aquarius=4H home, Pisces=5H creativity
-Natal: Sun 19 Pisces 5H, Moon 1 Aries 6H, Mercury 29 Capricorn 3H, Venus 0 Aries 6H, Mars 22 Cancer 8H rx, Jupiter 26 Gemini 8H, Saturn 25 Leo 9H
+House system: Aries=6H health/routine, Taurus=7H partnerships, Gemini=8H transformation, Cancer=9H beliefs/travel, Leo=10H career, Virgo=11H community, Libra=12H subconscious, Scorpio=1H self, Sagittarius=2H money, Capricorn=3H communication, Aquarius=4H home, Pisces=5H creativity/joy
+Natal: Sun 19 Pisces 5H, Moon 1 Aries 6H, Mercury 29 Capricorn 3H, Venus 0 Aries 6H, Mars 22 Cancer 8H rx, Jupiter 26 Gemini 8H, Saturn 25 Leo 9H, Uranus 16 Scorpio 1H rx, Pluto 16 Libra 12H rx
 About Jocelyn: healthcare professional with integrative/functional medicine background, recently finished a 72-hour water fast, on a 60-day gut reset protocol, practices hot yoga, grows lion's mane mushrooms, crochets, gluten-free since 2026, lives in Fort Collins CO, two daughters, partner Steve.
 
-CURRENT TRANSITS ${dateStr}:
-CRITICAL: Solar Eclipse in Aries on April 14 — directly hitting her 6H. Huge new beginning in health and body being seeded RIGHT NOW.
-Saturn 2 Aries → her 6H (long-term structure, here until 2028!)
-Neptune 0 Aries → her 6H (spiritual renewal, first time in 165 years)
-Venus 20 Aries → her 6H (moving to Taurus/7H on April 19)
-Mars just entered Pisces 0 → her 5H TODAY (creativity, joy, daughters)
-Jupiter 17 Cancer → her 9H (expansion of beliefs and wisdom)
-Pluto 3 Aquarius → her 4H (transformation of home and roots)
-Uranus 24 Taurus → her 7H (unexpected shifts in partnerships)
+CURRENT LIVE TRANSITS for ${dateStr} (fetched automatically from astronomy API):
+${planetLines}
+Solar Eclipse in Aries on April 14 — directly hitting her 6H. Major new beginning in health and body.
+Saturn in Aries until 2028 — long term restructuring of her 6H.
+Neptune in Aries first time in 165 years — spiritual renewal of her 6H.
+
 Make the reading warm, specific, personal. Reference her actual life context naturally. Speak directly to her.
 
 Respond ONLY with valid JSON, no markdown, no backticks:
@@ -55,10 +61,35 @@ export default function App() {
   const [reading, setReading] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [planets, setPlanets] = useState([]);
+  const [planetsLoading, setPlanetsLoading] = useState(true);
 
   const today = new Date();
   const dateStr = `${MONTHS[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
   const dayStr = `${DAYS[today.getDay()]}, ${dateStr}`;
+
+  useEffect(() => {
+    async function fetchPlanets() {
+      try {
+        const res = await fetch('/api/planets');
+        const data = await res.json();
+        const rows = data?.data?.table?.rows || [];
+        const parsed = rows.map(row => {
+          const name = row.entry?.name || '';
+          const lon = parseFloat(row.cells?.[0]?.position?.ecliptic?.longitude?.degrees || 0);
+          const { sign, degree } = degreeToSign(lon);
+          const house = HOUSE_MAP[sign] || '?H';
+          return { planet: name, sign, degree, house, note: '' };
+        }).filter(p => ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto'].includes(p.planet));
+        setPlanets(parsed);
+      } catch(e) {
+        console.error('Planet fetch failed:', e);
+      } finally {
+        setPlanetsLoading(false);
+      }
+    }
+    fetchPlanets();
+  }, []);
 
   async function generateReading() {
     setLoading(true);
@@ -68,7 +99,7 @@ export default function App() {
       const res = await fetch("/api/horoscope", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: buildPrompt(dateStr) })
+        body: JSON.stringify({ prompt: buildPrompt(dateStr, planets) })
       });
       const data = await res.json();
       const raw = (data.content || []).map(i => i.text || "").join("").trim();
@@ -88,6 +119,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#1a1208 0%,#120d1a 50%,#0d1218 100%)", padding:"2rem 1.5rem", fontFamily:"Georgia, serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
       <div style={{ maxWidth:640, margin:"0 auto" }}>
 
         <div style={{ marginBottom:"2rem", borderBottom:"0.5px solid rgba(255,255,255,0.1)", paddingBottom:"1.5rem" }}>
@@ -96,21 +128,26 @@ export default function App() {
           <div style={{ fontSize:14, color:"#a89880" }}>Scorpio rising · Sun in Pisces · Moon in Aries</div>
         </div>
 
-        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:"1rem" }}>
-          {TRANSITS.map(t => (
-            <div key={t.planet} style={{ padding:"5px 12px", borderRadius:20, fontSize:12, background:t.sign==="Aries"?"rgba(240,153,123,0.15)":"rgba(255,255,255,0.06)", border:t.sign==="Aries"?"0.5px solid rgba(240,153,123,0.4)":"0.5px solid rgba(255,255,255,0.1)", color:t.sign==="Aries"?"#F0997B":"#c4b49a" }}>
-              <span style={{ fontWeight:500 }}>{t.planet}</span> {t.degree} {t.sign} → {t.house}
+        {planetsLoading ? (
+          <div style={{ color:"#a89880", fontSize:13, fontStyle:"italic", marginBottom:"1.5rem" }}>Scanning the sky...</div>
+        ) : (
+          <div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:"1rem" }}>
+              {planets.map(p => (
+                <div key={p.planet} style={{ padding:"5px 12px", borderRadius:20, fontSize:12, background:p.sign==="Aries"?"rgba(240,153,123,0.15)":"rgba(255,255,255,0.06)", border:p.sign==="Aries"?"0.5px solid rgba(240,153,123,0.4)":"0.5px solid rgba(255,255,255,0.1)", color:p.sign==="Aries"?"#F0997B":"#c4b49a" }}>
+                  <span style={{ fontWeight:500 }}>{p.planet}</span> {p.degree} {p.sign} → {p.house}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        <div style={{ fontSize:12, color:"#F0997B", marginBottom:"1.5rem", fontStyle:"italic" }}>
-✦ Solar Eclipse in Aries Apr 14 · Saturn in your 6H until 2028 · Mars entered Pisces/5H today
-        </div>
+            <div style={{ fontSize:12, color:"#F0997B", marginBottom:"1.5rem", fontStyle:"italic" }}>
+              ✦ Live sky data · Solar Eclipse in Aries Apr 14 · Saturn in your 6H until 2028
+            </div>
+          </div>
+        )}
 
         {!reading && !loading && (
           <div>
-            <button onClick={generateReading} style={{ padding:"12px 28px", background:"rgba(240,153,123,0.15)", border:"0.5px solid rgba(240,153,123,0.5)", borderRadius:8, color:"#F0997B", fontSize:15, cursor:"pointer", fontFamily:"'Cormorant Garamond',Georgia,serif", letterSpacing:"0.05em" }}>
+            <button onClick={generateReading} disabled={planetsLoading} style={{ padding:"12px 28px", background:"rgba(240,153,123,0.15)", border:"0.5px solid rgba(240,153,123,0.5)", borderRadius:8, color:"#F0997B", fontSize:15, cursor:"pointer", fontFamily:"'Cormorant Garamond',Georgia,serif", letterSpacing:"0.05em", opacity:planetsLoading?0.5:1 }}>
               Read today's chart →
             </button>
             {error && <div style={{ marginTop:12, color:"#F0997B", fontSize:13 }}>Error: {error}</div>}
