@@ -71,17 +71,22 @@ export default function App() {
   useEffect(() => {
     async function fetchPlanets() {
       try {
-        const res = await fetch('/api/planets');
-        const data = await res.json();
-        const rows = data?.data?.table?.rows || [];
-        const parsed = rows.map(row => {
-          const name = row.entry?.name || '';
-          const lon = parseFloat(row.cells?.[0]?.position?.ecliptic?.longitude?.degrees || 0);
-          const { sign, degree } = degreeToSign(lon);
-          const house = HOUSE_MAP[sign] || '?H';
-          return { planet: name, sign, degree, house, note: '' };
-        }).filter(p => ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto'].includes(p.planet));
-        setPlanets(parsed);
+  const res = await fetch('/api/planets');
+  const data = await res.json();
+  const parsed = (data.planets || []).map(p => ({
+    ...p,
+    note: p.planet === 'Sun' ? 'identity & vitality' :
+          p.planet === 'Moon' ? 'emotions & instincts' :
+          p.planet === 'Mercury' ? 'mind & communication' :
+          p.planet === 'Venus' ? 'love & values' :
+          p.planet === 'Mars' ? 'drive & action' :
+          p.planet === 'Jupiter' ? 'expansion & luck' :
+          p.planet === 'Saturn' ? 'discipline & lessons' :
+          p.planet === 'Uranus' ? 'awakening & change' :
+          p.planet === 'Neptune' ? 'dreams & spirituality' :
+          p.planet === 'Pluto' ? 'transformation & power' : ''
+  }));
+  setPlanets(parsed);
       } catch(e) {
         console.error('Planet fetch failed:', e);
       } finally {
