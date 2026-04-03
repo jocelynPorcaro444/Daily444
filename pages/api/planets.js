@@ -1,29 +1,19 @@
 export default async function handler(req, res) {
-  const appId = process.env.ASTRONOMY_APP_ID
-  const appSecret = process.env.ASTRONOMY_APP_SECRET
-  
-  const credentials = Buffer.from(`${appId}:${appSecret}`).toString('base64')
-  
   const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  const dateStr = `${year}-${month}-${day}`
+  const timestamp = Math.floor(today.getTime() / 1000)
 
   try {
     const response = await fetch(
-      `https://api.astronomyapi.com/api/v2/bodies/positions/star?latitude=40.5853&longitude=-105.0844&elevation=1525&from_date=${dateStr}&to_date=${dateStr}&time=09:00:00&bodies=sun,moon,mercury,venus,mars,jupiter,saturn,uranus,neptune,pluto`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json'
-        }
-      }
+      `https://api.farmsense.net/v1/moonphases/?d=${timestamp}`
     )
+    const moon = await response.json()
 
-    const text = await response.text()
-    res.status(200).json({ raw: text, status: response.status })
+    const now = today.toISOString().split('T')[0]
+    
+    res.status(200).json({ 
+      moon: moon[0],
+      date: now
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
